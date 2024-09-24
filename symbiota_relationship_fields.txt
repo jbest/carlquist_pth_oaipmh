@@ -1,0 +1,11 @@
+subject identifier: catalogNumber
+subject identifier: otherCatalogNumbers
+subject identifier: occurrenceID
+accordingTo
+basisOfRecord
+establishedDate
+notes
+objectID
+relationshipID
+resourceUrl
+verbatimSciname

@@ -1,0 +1,11 @@
+analyticalStandardOf
+derivedFromSameIndividual
+ecologicallyOccursWith
+hasAnalyticalStandard
+hasHost
+hostOf
+originatingSampleOf
+partOf
+sharesOriginatingSample
+siblingOf
+subsampleOf
