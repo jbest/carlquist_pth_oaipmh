@@ -74,7 +74,12 @@ def parse_xml(xml_str):
         # handling multiple titles
         for title_entry in title_element:
             #print(title_entry)
-            title_entry_text = strip_chars(title_entry['#text'])
+            try:
+                title_entry_text = strip_chars(title_entry['#text'])
+            except (AttributeError, TypeError) as e:
+                print('ERROR:', e)
+                print('title_entry_text:', title_entry_text)
+                title_entry_text=None
             title_list.append(title_entry_text)
             #title_list.append(title['#text'])
             #print(title_entry_text)
@@ -102,7 +107,7 @@ def parse_xml(xml_str):
     #print(item_meta['title'])
     #print(title['#text'])
     #print('DATE')
-    date_element = item_meta['ns1:date']
+    date_element = item_meta.get('ns1:date', None)
     try:
         item_meta_dict['date'] = date_element['#text']
     except Exception as e:
@@ -253,28 +258,30 @@ for record in records:
         if 'local-cont-no' in id:
             brit_id_kv = id.split(':')
             brit_id = brit_id_kv[1].strip()
+    #print('id:', id, 'brit_id:', brit_id)
 
     data.append({'catalogNumber': catalogNumber, 
                  'occid': occid,
                  #'objectID': brit_id, 
-                 'objectID': item_meta_dict['brit_id'], 
+                 #'objectID': item_meta_dict['brit_id'], 
+                 'objectID': item_meta_dict.get('brit_id', None), 
                  'resourceUrl': resourceUrl, 
                  'ark': ark,
                  #'title': title,
-                 'title': strip_chars(item_meta_dict['title']),
+                 'title': strip_chars(item_meta_dict.get('title', None)),
                  'date': date,  
                  'relation': strip_chars(relation_string), 'relation_url': relation_url, 'relation_type': relation_type, 
-                 'identifiers': item_meta_dict['identifiers'],
+                 'identifiers': item_meta_dict.get('identifiers', None),
                  #'xml_str': xml_str, 
-                 'format': obj_format, 
-                 #'coverage': coverage,
-                 'place_name': item_meta_dict.get('place_name'),
-                 #'creator': creator,
-                 'date': item_meta_dict['date'],
-                'subjects_lcsh': strip_chars(item_meta_dict['subjects_lcsh']),
-                'subjects_kwd': strip_chars(item_meta_dict['subjects_kwd']),
-                'subjects_aat': strip_chars(item_meta_dict['subjects_aat']),
-                'subjects_untl_bs': strip_chars(item_meta_dict['subjects_untl_bs']),
+                'format': obj_format, 
+                'coverage': coverage,
+                'place_name': item_meta_dict.get('place_name', None),
+                'creator': creator,
+                'date': item_meta_dict.get('date', None),
+                'subjects_lcsh': strip_chars(item_meta_dict.get('subjects_lcsh', None)),
+                'subjects_kwd': strip_chars(item_meta_dict.get('subjects_kwd', None)),
+                'subjects_aat': strip_chars(item_meta_dict.get('subjects_aat', None)),
+                'subjects_untl_bs': strip_chars(item_meta_dict.get('subjects_untl_bs', None)),
                 #'subjects': item_meta_dict['subjects'],
                 })
 
