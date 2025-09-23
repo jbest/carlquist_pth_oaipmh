@@ -33,17 +33,13 @@ basisOfRecord = 'TBD' #Not sure how/if we'll use this
 url_pattern = re.compile(r"(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)")
 # OCCID regex pattern
 occid_pattern = re.compile(r'occid=(?P<occid>\d+)')
-# RSA catalogNumber pattern
 # RSA regex pattern for general, micro, and wood catalogNumbers
 rsa_catnum_pattern = re.compile(r'RSAw?(?:-MICR-)?\d+')
-# previous general vascular pattern for RSA
-#rsa_catnum_pattern = re.compile(r'RSA\d+')
 
 sickle = Sickle('https://texashistory.unt.edu/oai')
 # Retrieve all public PTH records in the SJCC collection
-#record_format = 'oai_dc'
+# This script is tightly paired with the UNTL record format and probably would not work with the other options
 record_format = 'untl'
-#record_format = 'untl_dpla'
 records = sickle.ListRecords(metadataPrefix=record_format, set='collection:SJCC')
 
 def strip_chars(input_str, chars=['[',']', '\'']):
@@ -56,7 +52,7 @@ def parse_xml(xml_str):
     item_meta_dict = {}
     # NOTE - not parsed:
     # <ns1:primarySource>
-    # <ns1:creator qualifier="pht">
+
     # <ns1:language>
     # <ns1:collection>
     # <ns1:institution>
@@ -65,7 +61,17 @@ def parse_xml(xml_str):
     # <ns1:format>
     #unt_xml = xmltodict.parse(xml_content)
     unt_xml = xmltodict.parse(xml_str)
+    # testing
+    #print('UNT_XML:\n', unt_xml)
     item_meta = unt_xml['ns0:record']['ns0:metadata']['ns1:metadata']
+
+    # Get creator
+    # <ns1:creator qualifier="pht">
+    creator_element = item_meta.get('ns1:creator', None)
+    if creator_element:
+        creator_name = creator_element.get('ns1:name', None)
+    else:
+        creator_name = None
 
     #print('TITLE')
     title_element = item_meta['ns1:title']
@@ -129,7 +135,8 @@ def parse_xml(xml_str):
     #print('SUBJECTS')
     subjects = item_meta['ns1:subject']
     #print(subjects)
-    subject_list = []
+    subject_list_all = []
+    subject_list_other = []
     subject_lcsh_list = []
     subject_kwd_list = []
     subject_aat_list = []
@@ -145,10 +152,11 @@ def parse_xml(xml_str):
                 subject_aat_list.append(subject['#text'])
             if subject.get('@qualifier', None) == 'UNTL-BS':
                 subject_untl_bs_list.append(subject['#text'])
-            subject_list.append(subject['#text'])
+            subject_list_all.append(subject['#text'])
         except AttributeError as e:
             # Assuming subject is just a string, no qualifer
-            subject_list.append(subject)
+            subject_list_all.append(subject)
+            subject_list_other.append(subject)
         except Exception as e:
             print('ERROR: subject assignment', e)
             print('Exception type:', type(e).__name__)
@@ -161,7 +169,9 @@ def parse_xml(xml_str):
     item_meta_dict['subjects_kwd'] = str(subject_kwd_list)
     item_meta_dict['subjects_aat'] = str(subject_aat_list)
     item_meta_dict['subjects_untl_bs'] = str(subject_untl_bs_list)
-    item_meta_dict['subjects'] = str(subject_list)
+    item_meta_dict['subjects_all'] = strip_chars(str(subject_list_all))
+    item_meta_dict['subjects_other'] = strip_chars(str(subject_list_other))
+    item_meta_dict['creator'] = creator_name
 
 
     #print('COVERAGES')
@@ -227,8 +237,20 @@ for record in records:
     relation = record.metadata.get('relation')
     obj_format = record.metadata.get('format')
     coverage = record.metadata.get('coverage')
-    creator = record.metadata.get('creator')
+    #creator = record.metadata.get('creator')
+    #print('coverage', coverage)
+    #print('creator', creator)
 
+    """
+    creator_item = record.metadata.get('creator')
+    if creator_item:
+        creator_name = creator_item
+        print('creator_item', creator_item)
+        print(record)
+    else:
+        creator_name = None
+
+    """
 
     if relation:
         relation_count += 1
@@ -282,20 +304,22 @@ for record in records:
                  'ark': ark,
                  #'title': title,
                  'title': strip_chars(item_meta_dict.get('title', None)),
-                 'date': date,  
+                 #'date': date,  
                  'relation': strip_chars(relation_string), 'relation_url': relation_url, 'relation_type': relation_type, 
                  'identifiers': item_meta_dict.get('identifiers', None),
                  #'xml_str': xml_str, 
                 'format': obj_format, 
                 'coverage': coverage,
                 'place_name': item_meta_dict.get('place_name', None),
-                'creator': creator,
+                'creator': item_meta_dict.get('creator', None),
+                #'creator': creator,
                 'date': item_meta_dict.get('date', None),
                 'subjects_lcsh': strip_chars(item_meta_dict.get('subjects_lcsh', None)),
                 'subjects_kwd': strip_chars(item_meta_dict.get('subjects_kwd', None)),
                 'subjects_aat': strip_chars(item_meta_dict.get('subjects_aat', None)),
                 'subjects_untl_bs': strip_chars(item_meta_dict.get('subjects_untl_bs', None)),
-                #'subjects': item_meta_dict['subjects'],
+                'subjects_all': item_meta_dict.get('subjects_all', None),
+                'subjects_other': item_meta_dict.get('subjects_other', None),
                 })
 
 print('rec_count', rec_count)
