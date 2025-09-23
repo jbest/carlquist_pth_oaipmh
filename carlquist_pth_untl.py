@@ -76,8 +76,12 @@ def parse_xml(xml_str):
             #print(title_entry)
             try:
                 title_entry_text = strip_chars(title_entry['#text'])
-            except (AttributeError, TypeError) as e:
+            except TypeError as e:
+                # Assuming title is plain text
+                title_entry_text = strip_chars(title_entry)
+            except AttributeError as e:
                 print('ERROR:', e)
+                print('Exception type:', type(e).__name__)
                 print('title_entry_text:', title_entry_text)
                 title_entry_text=None
             title_list.append(title_entry_text)
@@ -109,7 +113,10 @@ def parse_xml(xml_str):
     #print('DATE')
     date_element = item_meta.get('ns1:date', None)
     try:
-        item_meta_dict['date'] = date_element['#text']
+        if date_element:
+            item_meta_dict['date'] = date_element['#text']
+        else:
+            item_meta_dict['date'] = None
     except Exception as e:
         print('ERROR: date assignment', e, date_element)
         item_meta_dict['date'] = None
@@ -130,19 +137,25 @@ def parse_xml(xml_str):
     for subject in subjects:
         #print(subject)
         try:
-            if subject['@qualifier'] == 'LCSH':
+            if subject.get('@qualifier', None) == 'LCSH':
                 subject_lcsh_list.append(subject['#text'])
-            if subject['@qualifier'] == 'KWD':
+            if subject.get('@qualifier', None) == 'KWD':
                 subject_kwd_list.append(subject['#text'])  
-            if subject['@qualifier'] == 'AAT':
+            if subject.get('@qualifier', None) == 'AAT':
                 subject_aat_list.append(subject['#text'])
-            if subject['@qualifier'] == 'UNTL-BS':
+            if subject.get('@qualifier', None) == 'UNTL-BS':
                 subject_untl_bs_list.append(subject['#text'])
             subject_list.append(subject['#text'])
+        except AttributeError as e:
+            # Assuming subject is just a string, no qualifer
+            subject_list.append(subject)
         except Exception as e:
             print('ERROR: subject assignment', e)
-            print(subject)
+            print('Exception type:', type(e).__name__)
+            print('subject:', subject)
             print(item_meta_dict)
+            print('subjects:', subjects)
+            print('len(subjects):', len(subjects))
     #print(subject_list)
     item_meta_dict['subjects_lcsh'] = str(subject_lcsh_list)
     item_meta_dict['subjects_kwd'] = str(subject_kwd_list)
